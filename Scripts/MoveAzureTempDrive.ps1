@@ -5,7 +5,7 @@
         [string]$TempDriveLetter
     )
 
-    Import-DscResource -ModuleName MoveAzureTempDrive, xComputerManagement
+    Import-DscResource -ModuleName MovePageFile, xComputerManagement
 
     Node localhost 
     {
@@ -47,11 +47,37 @@
             }
            
         }
+        Script ChangeTempDriveLetter
+        {
+        
+            GetScript  = { @{ Result = "" } }
+            TestScript =  { 
+               $TempDriveLetter2 = $using:TempDriveLetter + ":"
+               $drive = Get-WmiObject -Class win32_volume -Filter "DriveLetter = 'D:' and Label = 'Temporary Storage'"
+               #There is no disk with new drive letter
+               if ($drive -ne $null)
+               {
+                    return $false
+               }
+               else
+               {
+                    return $true
+               }
+            
+            }
+            SetScript  = {
+                $TempDriveLetter2 = $using:TempDriveLetter + ":"
+                $drive = Get-WmiObject -Class win32_volume -Filter "DriveLetter = 'D:' and Label = 'Temporary Storage'"
+                Set-WMIInstance -input $drive -Arguments @{DriveLetter = "$TempDriveLetter2"}|Out-File -FilePath 'c:\packages\MoveAzureTempDrive-log.txt' -Append
+            }
+            DependsOn = "[Script]DisablePageFile"
+           
+        }
 
-	   MoveAzureTempDrive MoveAzureTempDrive
+        MovePageFile MovePageFile
        {
-		  
-		   TempDriveLetter = $TempDriveLetter           
+           TempDriveLetter = $TempDriveLetter
+           DependsOn = "[Script]ChangeTempDriveLetter"        
        }
       
 	}
