@@ -38,12 +38,12 @@ Restart-Computer –Force
 
 Once the VM restarts, the PowerShell DSC module will then change the drive letter to your desired drive and then re-enable the page file and reboot:
 
-Get-Partition -DriveLetter "D"| Set-Partition -NewDriveLetter $TempDriveLetter
-$TempDriveLetter = $TempDriveLetter + ":"
-$drive = Get-WmiObject -Class win32_volume -Filter “DriveLetter = '$TempDriveLetter'”
-Set-WMIInstance -Class Win32_PageFileSetting -Arguments @{ Name = "$TempDriveLetter\pagefile.sys"; MaximumSize = 0; }
+#Change drive letter
+$TempDriveLetter2 = $TempDriveLetter + ":"
+$drive = Get-WmiObject -Class win32_volume -Filter "DriveLetter = '$TempDriveLetter'"
+Set-WMIInstance -input $drive -Arguments @{DriveLetter = "$TempDriveLetter2"}
 
-Restart-Computer -Force      
-
-
+#Enable Pagefile
+Set-WMIInstance -Class Win32_PageFileSetting -Arguments @{ Name = "$TempDriveLetter2\pagefile.sys"; MaximumSize = 0; }
+$global:DSCMachineStatus = 1    
 
